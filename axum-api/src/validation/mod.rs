@@ -74,11 +74,10 @@ pub fn allow_only_alphanumerics_and_specials(allowed_specials: Option<&str>) -> 
 /// Ensures the string does not start with a digit.
 pub fn not_start_with_digit() -> ValidatorFn {
     Box::new(|s: &str| {
-        if let Some(first_char) = s.chars().next() {
-            if first_char.is_ascii_digit() {
+        if let Some(first_char) = s.chars().next()
+            && first_char.is_ascii_digit() {
                 return Err("String cannot start with a digit.".to_string());
             }
-        }
         Ok(())
     })
 }

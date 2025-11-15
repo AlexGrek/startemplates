@@ -144,9 +144,7 @@ pub async fn apikey_auth_middleware_user(
         .ok_or_else(|| AppError::Authorization("Missing API key in headers".to_string()))?;
 
     if !app_state.config.client_api_keys.contains(&api_key) {
-        return Err(AppError::Authorization(format!(
-            "Unauthorized: Invalid API key"
-        )));
+        return Err(AppError::Authorization("Unauthorized: Invalid API key".to_string()));
     }
 
     Ok(next.run(req).await)

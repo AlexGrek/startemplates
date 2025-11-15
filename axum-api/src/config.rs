@@ -29,9 +29,9 @@ impl AppConfig {
             .map(|s| s.to_lowercase().contains("true"))
             .unwrap_or(true);
 
-        return Ok(RuntimeConfig {
+        Ok(RuntimeConfig {
             user_login_allowed: allow_user_reg,
-        });
+        })
     }
 
     pub fn from_env() -> Result<Self, Box<dyn std::error::Error>> {

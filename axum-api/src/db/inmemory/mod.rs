@@ -15,6 +15,12 @@ pub struct InMemoryDatabase {
     tickets_repo: InMemoryTicketsRepo,
 }
 
+impl Default for InMemoryDatabase {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InMemoryDatabase {
     pub fn new() -> Self {
         Self {
@@ -68,6 +74,12 @@ impl DatabaseInterface for InMemoryDatabase {
 // In-memory Users Repository
 pub struct InMemoryUsersRepo {
     users: RwLock<HashMap<String, User>>,
+}
+
+impl Default for InMemoryUsersRepo {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl InMemoryUsersRepo {
@@ -133,6 +145,12 @@ pub struct InMemoryProjectsRepo {
     projects: RwLock<HashMap<String, Project>>,
 }
 
+impl Default for InMemoryProjectsRepo {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InMemoryProjectsRepo {
     pub fn new() -> Self {
         Self {
@@ -154,7 +172,7 @@ impl ProjectsRepo for InMemoryProjectsRepo {
     fn create_project<'a>(&'a self, project: Project) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut projects = self.projects.write().unwrap();
-            let id = project.id.clone();
+            let id = project.id;
             if projects.contains_key(&id.to_string()) {
                 return Err(AppError::Conflict(format!("Project {} already exists", id)));
             }
@@ -196,6 +214,12 @@ pub struct InMemoryGroupsRepo {
     groups: RwLock<HashMap<String, Group>>,
 }
 
+impl Default for InMemoryGroupsRepo {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InMemoryGroupsRepo {
     pub fn new() -> Self {
         Self {
@@ -217,7 +241,7 @@ impl GroupsRepo for InMemoryGroupsRepo {
     fn create_group<'a>(&'a self, group: Group) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut groups = self.groups.write().unwrap();
-            let id = group.id.clone();
+            let id = group.id;
             if groups.contains_key(&id.to_string()) {
                 return Err(AppError::Conflict(format!("Group {} already exists", id)));
             }
@@ -259,6 +283,12 @@ pub struct InMemoryTicketsRepo {
     tickets: RwLock<HashMap<String, Ticket>>,
 }
 
+impl Default for InMemoryTicketsRepo {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InMemoryTicketsRepo {
     pub fn new() -> Self {
         Self {
@@ -280,7 +310,7 @@ impl TicketsRepo for InMemoryTicketsRepo {
     fn create_ticket<'a>(&'a self, ticket: Ticket) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut tickets = self.tickets.write().unwrap();
-            let id = ticket.id.clone();
+            let id = ticket.id;
             if tickets.contains_key(&id.to_string()) {
                 return Err(AppError::Conflict(format!("Ticket {} already exists", id)));
             }

@@ -24,7 +24,7 @@ pub async fn register(
     let hashed_password = app_state.auth.hash_password(&req.password)?;
 
     let user = User {
-        username: validate_username(&req.user).map_err(|estr| AppError::Validation(estr))?,
+        username: validate_username(&req.user).map_err(AppError::Validation)?,
         password_hash: hashed_password,
     };
 

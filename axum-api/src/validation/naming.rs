@@ -9,7 +9,7 @@ pub fn validate_username(username: &str) -> Result<String, String> {
             not_start_with_digit(),
         ];
     run_validators(&lowercased, &validators)?;
-    return Ok(lowercased);
+    Ok(lowercased)
 }
 
 #[cfg(test)]

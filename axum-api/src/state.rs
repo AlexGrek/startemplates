@@ -28,7 +28,7 @@ impl AppState {
             auth: Arc::new(auth),
             db: db_trait.clone(),
             runtime_config: Arc::new(
-                AppConfig::runtime_from_env().unwrap_or(RuntimeConfig::default()),
+                AppConfig::runtime_from_env().unwrap_or_default(),
             ),
             controller: Arc::new(Controller::new(db_trait.clone())),
         }
