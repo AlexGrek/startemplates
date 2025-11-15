@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    config::AppConfig,
+    config::{AppConfig, RuntimeConfig},
     db::{DatabaseInterface, inmemory::InMemoryDatabase},
     middleware::{auth::Auth, user_utils::UserUtils},
 };
@@ -12,6 +12,7 @@ pub struct AppState {
     pub auth: Arc<Auth>,
     pub users: Arc<UserUtils>,
     pub db: Arc<dyn DatabaseInterface>,
+    pub runtime_config: Arc<RuntimeConfig>,
 }
 
 impl AppState {
@@ -21,6 +22,9 @@ impl AppState {
             auth: Arc::new(auth),
             users: Arc::new(UserUtils {}),
             db: Arc::new(InMemoryDatabase::new()),
+            runtime_config: Arc::new(
+                AppConfig::runtime_from_env().unwrap_or(RuntimeConfig::default()),
+            ),
         }
     }
 }

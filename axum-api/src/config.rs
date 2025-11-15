@@ -1,6 +1,14 @@
 use std::env;
 
 use dotenvy::dotenv;
+use serde::{Deserialize, Serialize};
+
+use crate::error::AppError;
+
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+pub struct RuntimeConfig {
+    pub user_login_allowed: bool,
+}
 
 #[derive(Clone, Debug)]
 pub struct AppConfig {
@@ -12,8 +20,20 @@ pub struct AppConfig {
     pub port: u16,
 }
 
-
 impl AppConfig {
+    pub fn runtime_from_env() -> Result<RuntimeConfig, AppError> {
+        // Load .env file if it exists
+        dotenv().ok();
+
+        let allow_user_reg = env::var("API_ALLOW_USER_REGISTRATION")
+            .map(|s| s.to_lowercase().contains("true"))
+            .unwrap_or(true);
+
+        return Ok(RuntimeConfig {
+            user_login_allowed: allow_user_reg,
+        });
+    }
+
     pub fn from_env() -> Result<Self, Box<dyn std::error::Error>> {
         // Load .env file if it exists
         dotenv().ok();
@@ -24,8 +44,8 @@ impl AppConfig {
         let management_token = env::var("MGMT_TOKEN")
             .unwrap_or_else(|_| "default_mgmt_token_change_in_production".to_string());
 
-        let database_connection_string = env::var("DB_CONNECTION_STRING")
-            .unwrap_or_else(|_| "./data".to_string());
+        let database_connection_string =
+            env::var("DB_CONNECTION_STRING").unwrap_or_else(|_| "./data".to_string());
 
         let client_api_keys = env::var("CLIENT_API_KEYS")
             .unwrap_or_else(|_| String::new())
@@ -34,8 +54,7 @@ impl AppConfig {
             .map(|s| s.to_string())
             .collect();
 
-        let host = env::var("HOST")
-            .unwrap_or_else(|_| "0.0.0.0".to_string());
+        let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
 
         let port = env::var("PORT")
             .unwrap_or_else(|_| "3069".to_string())
@@ -47,7 +66,7 @@ impl AppConfig {
             client_api_keys,
             host,
             port,
-            management_token
+            management_token,
         })
     }
 }

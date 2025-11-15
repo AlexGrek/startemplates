@@ -1,18 +1,17 @@
+pub mod api;
 pub mod config;
+pub mod db;
 pub mod error;
 pub mod middleware;
 pub mod models;
 pub mod schema;
 pub mod state;
-pub mod api;
-pub mod db;
+pub mod test;
+pub mod validation;
 
 use std::sync::Arc;
 
-use crate::{
-    middleware::{auth::Auth},
-    state::AppState,
-};
+use crate::{error::AppError, middleware::auth::Auth, state::AppState};
 use axum::{Json, Router, middleware::from_fn_with_state, routing::*};
 use log::info;
 use serde_json::{Value, json};
@@ -21,6 +20,35 @@ use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
+
+pub fn create_app(shared_state: Arc<AppState>) -> Router {
+    Router::new()
+        // Health check and stats
+        .route("/health", get(health_check))
+        .nest(
+            "/api",
+            Router::new()
+                .route("/ping", get(health_check))
+                .layer(from_fn_with_state(
+                    shared_state.clone(),
+                    middleware::apikey_auth_middleware_user,
+                )),
+        )
+        .with_state(shared_state.clone())
+        .layer(TraceLayer::new_for_http())
+        .layer(
+            CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_headers(Any),
+        )
+}
+
+pub fn create_mock_shared_state() -> Result<AppState, Box<dyn std::error::Error>> {
+    let config = config::AppConfig::from_env()?;
+    let auth = Auth::new(config.jwt_secret.as_bytes());
+    Ok(AppState::new(config, auth))
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -46,26 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let shared_state = Arc::new(app_state);
 
     // Build the application router
-    let app = Router::new()
-        // Health check and stats
-        .route("/health", get(health_check))
-        .nest(
-            "/api",
-            Router::new()
-                .route("/ping", get(health_check))
-                .layer(from_fn_with_state(
-                    shared_state.clone(),
-                    middleware::apikey_auth_middleware_user,
-                )),
-        )
-        .with_state(shared_state.clone())
-        .layer(TraceLayer::new_for_http())
-        .layer(
-            CorsLayer::new()
-                .allow_origin(Any)
-                .allow_methods(Any)
-                .allow_headers(Any),
-        );
+    let app = create_app(shared_state);
 
     // Start the server
     let bind_address = format!("{}:{}", config.host, config.port);

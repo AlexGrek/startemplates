@@ -92,12 +92,12 @@ impl AppError {
         match self {
             AppError::Authentication(_)
             | AppError::Authorization(_)
-            | AppError::Validation(_)
             | AppError::NotFound(_)
             | AppError::BadRequest(_)
             | AppError::Jwt(_)
             | AppError::Parse(_) => false,
-            AppError::Internal(_)
+            AppError::Validation(_)
+            | AppError::Internal(_)
             | AppError::Serialization(_)
             | AppError::Io(_)
             | AppError::Conflict(_)

@@ -2,6 +2,7 @@ use crate::{
     error::AppError,
     schema::{LoginRequest, LoginResponse, RegisterRequest, User},
     state::AppState,
+    validation::naming::validate_username,
 };
 use axum::{
     extract::{Json, State},
@@ -14,10 +15,14 @@ pub async fn register(
     State(app_state): State<Arc<AppState>>,
     Json(req): Json<RegisterRequest>,
 ) -> Result<impl IntoResponse, AppError> {
+    if !app_state.runtime_config.user_login_allowed {
+        return Err(AppError::Authentication("Only admin can create new users".to_string()));
+    }
+
     let hashed_password = app_state.auth.hash_password(&req.password)?;
 
     let user = User {
-        username: req.email.clone(),
+        username: validate_username(&req.email).map_err(|estr| AppError::Validation(estr))?,
         password_hash: hashed_password,
     };
 
