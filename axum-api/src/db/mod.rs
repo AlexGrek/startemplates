@@ -1,10 +1,6 @@
 pub mod inmemory;
 
-use crate::{error::AppError, models::{Group, Project, Ticket}, schema::User};
-use std::pin::Pin;
-
-// Type alias for boxed futures to make traits dyn compatible
-type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
+use crate::{error::AppError, models::{Group, Project, Ticket}, schema::User, utils::BoxFuture};
 
 // Individual repository traits
 pub trait UsersRepo: Send + Sync {

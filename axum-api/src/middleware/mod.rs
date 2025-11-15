@@ -9,7 +9,6 @@ use axum::{
 };
 
 pub mod auth;
-pub mod user_utils;
 
 use crate::{error::AppError, middleware::auth::AuthenticatedUser, state::AppState};
 
@@ -78,7 +77,7 @@ pub async fn jwt_auth_middleware(
 
     match app_state.auth.decode_token(&token) {
         Ok(claims) => {
-            if app_state.users.validate_user(&claims.sub) {
+            if app_state.controller.user.validate_user(&claims.sub).await {
                 __parts__.extensions.insert(claims.sub);
                 let req = Request::from_parts(__parts__, body);
                 Ok(next.run(req).await)

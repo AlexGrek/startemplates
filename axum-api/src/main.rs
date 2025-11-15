@@ -8,6 +8,8 @@ pub mod schema;
 pub mod state;
 pub mod test;
 pub mod validation;
+pub mod controllers;
+pub mod utils;
 
 use std::sync::Arc;
 
