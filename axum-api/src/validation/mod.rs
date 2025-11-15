@@ -47,10 +47,7 @@ pub fn limit_min_length(n: usize) -> ValidatorFn {
 /// Note: The input `allowed_specials` is expected to be a string of characters to allow.
 pub fn allow_only_alphanumerics_and_specials(allowed_specials: Option<&str>) -> ValidatorFn {
     // Convert the allowed specials into a HashSet for O(1) lookup
-    let allowed_set: HashSet<char> = allowed_specials
-        .unwrap_or("")
-        .chars()
-        .collect();
+    let allowed_set: HashSet<char> = allowed_specials.unwrap_or("").chars().collect();
 
     Box::new(move |s: &str| {
         for c in s.chars() {
@@ -96,6 +93,43 @@ pub fn force_lowercase() -> TransformerFn {
 /// 3. Forces the input string to uppercase.
 pub fn force_uppercase() -> TransformerFn {
     Box::new(|s: &str| s.to_uppercase())
+}
+
+pub fn validate_email() -> ValidatorFn {
+    Box::new(|s: &str| {
+        // must contain exactly one '@'
+        let parts: Vec<&str> = s.split('@').collect();
+        if parts.len() != 2 {
+            return Err("Email must contain exactly one '@'".into());
+        }
+
+        let (left, right) = (parts[0].trim(), parts[1].trim());
+
+        // both sides must not be empty or whitespace
+        if left.is_empty() {
+            return Err("Email local-part (before '@') is empty".into());
+        }
+        if right.is_empty() {
+            return Err("Email domain (after '@') is empty".into());
+        }
+
+        // right half must contain at least one dot, and not at edges
+        if !right.contains('.') {
+            return Err("Email domain must contain at least one '.'".into());
+        }
+
+        // no leading '.' or trailing '.'
+        if right.starts_with('.') || right.ends_with('.') {
+            return Err("Email domain cannot start or end with '.'".into());
+        }
+
+        // ensure each domain segment is nonempty
+        if right.split('.').any(|seg| seg.trim().is_empty()) {
+            return Err("Email domain contains empty segments".into());
+        }
+
+        Ok(())
+    })
 }
 
 // --- 4. Pipeline Execution ---
@@ -192,9 +226,9 @@ mod tests {
             allow_only_alphanumerics_and_specials(Some("!")),
             not_start_with_digit(),
         ];
-        
+
         let valid_string = "Hello!World";
-        
+
         // No transformation needed, just run validators
         assert!(run_validators(valid_string, &validators).is_ok());
     }
@@ -216,13 +250,13 @@ mod tests {
         // Should contain the correct failure reason
         assert!(result.unwrap_err().contains("Length limit exceeded"));
     }
-    
+
     #[test]
     fn test_pipeline_fail_on_last_validator() {
         // Define a combination where the last validator fails
         let validators: Vec<ValidatorFn> = vec![
-            limit_length(20), // Passes
-            not_start_with_digit(), // Passes
+            limit_length(20),                            // Passes
+            not_start_with_digit(),                      // Passes
             allow_only_alphanumerics_and_specials(None), // Fails (contains '_')
         ];
 
