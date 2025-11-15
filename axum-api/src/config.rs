@@ -1,0 +1,53 @@
+use std::env;
+
+use dotenvy::dotenv;
+
+#[derive(Clone, Debug)]
+pub struct AppConfig {
+    pub jwt_secret: String,
+    pub database_connection_string: String,
+    pub client_api_keys: Vec<String>,
+    pub management_token: String,
+    pub host: String,
+    pub port: u16,
+}
+
+
+impl AppConfig {
+    pub fn from_env() -> Result<Self, Box<dyn std::error::Error>> {
+        // Load .env file if it exists
+        dotenv().ok();
+
+        let jwt_secret = env::var("JWT_SECRET")
+            .unwrap_or_else(|_| "default_jwt_secret_change_in_production".to_string());
+
+        let management_token = env::var("MGMT_TOKEN")
+            .unwrap_or_else(|_| "default_mgmt_token_change_in_production".to_string());
+
+        let database_connection_string = env::var("DB_CONNECTION_STRING")
+            .unwrap_or_else(|_| "./data".to_string());
+
+        let client_api_keys = env::var("CLIENT_API_KEYS")
+            .unwrap_or_else(|_| String::new())
+            .split(':')
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .collect();
+
+        let host = env::var("HOST")
+            .unwrap_or_else(|_| "0.0.0.0".to_string());
+
+        let port = env::var("PORT")
+            .unwrap_or_else(|_| "3069".to_string())
+            .parse::<u16>()?;
+
+        Ok(Self {
+            jwt_secret,
+            database_connection_string,
+            client_api_keys,
+            host,
+            port,
+            management_token
+        })
+    }
+}
