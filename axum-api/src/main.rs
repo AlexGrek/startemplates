@@ -11,7 +11,7 @@ pub mod validation;
 
 use std::sync::Arc;
 
-use crate::{error::AppError, middleware::auth::Auth, state::AppState};
+use crate::{middleware::auth::Auth, state::AppState};
 use axum::{Json, Router, middleware::from_fn_with_state, routing::*};
 use log::info;
 use serde_json::{Value, json};
@@ -25,8 +25,10 @@ pub fn create_app(shared_state: Arc<AppState>) -> Router {
     Router::new()
         // Health check and stats
         .route("/health", get(health_check))
+        .route("/api/register", post(api::v1::authentication::login::register))
+        .route("/api/login", post(api::v1::authentication::login::login))
         .nest(
-            "/api",
+            "/api/v1",
             Router::new()
                 .route("/ping", get(health_check))
                 .layer(from_fn_with_state(

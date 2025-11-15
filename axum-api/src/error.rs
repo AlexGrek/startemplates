@@ -55,7 +55,7 @@ impl AppError {
             AppError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Serialization(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Authentication(_) => StatusCode::UNAUTHORIZED,
-            AppError::Authorization(_) => StatusCode::FORBIDDEN,
+            AppError::Authorization(_) => StatusCode::UNAUTHORIZED,
             AppError::Validation(_) => StatusCode::BAD_REQUEST,
             AppError::NotFound(_) => StatusCode::NOT_FOUND,
             AppError::Conflict(_) => StatusCode::CONFLICT,
@@ -199,7 +199,7 @@ mod tests {
         );
         assert_eq!(
             AppError::authorization("test").status_code(),
-            StatusCode::FORBIDDEN
+            StatusCode::UNAUTHORIZED
         );
         assert_eq!(
             AppError::validation("test").status_code(),

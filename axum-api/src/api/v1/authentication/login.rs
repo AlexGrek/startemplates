@@ -16,7 +16,9 @@ pub async fn register(
     Json(req): Json<RegisterRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     if !app_state.runtime_config.user_login_allowed {
-        return Err(AppError::Authentication("Only admin can create new users".to_string()));
+        return Err(AppError::Authentication(
+            "Only admin can create new users".to_string(),
+        ));
     }
 
     let hashed_password = app_state.auth.hash_password(&req.password)?;
@@ -35,14 +37,19 @@ pub async fn register(
         format!("User with ID {:?} created: {}", &uid, &req.email)
     );
 
-    Ok(StatusCode::OK)
+    Ok(StatusCode::CREATED)
 }
 
 pub async fn login(
     State(app_state): State<Arc<AppState>>,
     Json(req): Json<LoginRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = app_state.db.users().get_user(&req.email).await?;
+    let user = app_state
+        .db
+        .users()
+        .get_user(&req.email)
+        .await
+        .map_err(|_e| AppError::Authorization("Unauthorized".to_string()))?;
 
     if !app_state
         .auth

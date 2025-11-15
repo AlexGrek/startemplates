@@ -28,6 +28,21 @@ pub fn limit_length(n: usize) -> ValidatorFn {
     })
 }
 
+/// Limits the length of the string to  min `n` characters (Unicode-aware).
+pub fn limit_min_length(n: usize) -> ValidatorFn {
+    Box::new(move |s: &str| {
+        let actual_len = s.chars().count();
+        if actual_len < n {
+            Err(format!(
+                "Length limit exceeded: {} characters found, maximum is {}",
+                actual_len, n
+            ))
+        } else {
+            Ok(())
+        }
+    })
+}
+
 /// 2. Allows only ASCII alphanumerics (a-z, A-Z, 0-9) and an optional list of specific characters.
 /// Note: The input `allowed_specials` is expected to be a string of characters to allow.
 pub fn allow_only_alphanumerics_and_specials(allowed_specials: Option<&str>) -> ValidatorFn {
