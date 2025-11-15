@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{controllers::{group_controller::GroupController, project_controller::ProjectController, ticket_controller::TicketController, user_controller::UserController}, db::DatabaseInterface, error::AppError, utils::BoxFuture};
+use crate::{controllers::{group_controller::GroupController, project_controller::ProjectController, ticket_controller::TicketController, user_controller::UserController}, db::DatabaseInterface};
 pub mod user_controller;
 pub mod project_controller;
 pub mod group_controller;
