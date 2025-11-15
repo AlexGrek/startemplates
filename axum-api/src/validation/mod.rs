@@ -2,7 +2,7 @@ pub mod naming;
 
 use std::collections::HashSet;
 
-// --- 1. Type Aliases for Pipeline Functions ---
+// --- Type Aliases for Pipeline Functions ---
 
 // ValidatorFn: Takes an immutable string slice and returns Ok(()) on success,
 // or an Err(String) containing the error message.
@@ -11,7 +11,7 @@ type ValidatorFn = Box<dyn Fn(&str) -> Result<(), String>>;
 // TransformerFn: Takes an immutable string slice and returns a transformed String.
 type TransformerFn = Box<dyn Fn(&str) -> String>;
 
-// --- 2. Validator Generator Functions ---
+// --- Validator Generator Functions ---
 
 /// 1. Limits the length of the string to `n` characters (Unicode-aware).
 pub fn limit_length(n: usize) -> ValidatorFn {
@@ -43,7 +43,7 @@ pub fn limit_min_length(n: usize) -> ValidatorFn {
     })
 }
 
-/// 2. Allows only ASCII alphanumerics (a-z, A-Z, 0-9) and an optional list of specific characters.
+/// Allows only ASCII alphanumerics (a-z, A-Z, 0-9) and an optional list of specific characters.
 /// Note: The input `allowed_specials` is expected to be a string of characters to allow.
 pub fn allow_only_alphanumerics_and_specials(allowed_specials: Option<&str>) -> ValidatorFn {
     // Convert the allowed specials into a HashSet for O(1) lookup
@@ -71,7 +71,7 @@ pub fn allow_only_alphanumerics_and_specials(allowed_specials: Option<&str>) -> 
     })
 }
 
-/// 4. Ensures the string does not start with a digit.
+/// Ensures the string does not start with a digit.
 pub fn not_start_with_digit() -> ValidatorFn {
     Box::new(|s: &str| {
         if let Some(first_char) = s.chars().next() {
@@ -83,14 +83,14 @@ pub fn not_start_with_digit() -> ValidatorFn {
     })
 }
 
-// --- 3. Transformer Generator Functions (for case change) ---
+// --- Transformer Generator Functions (for case change) ---
 
-/// 3. Forces the input string to lowercase.
+/// Forces the input string to lowercase.
 pub fn force_lowercase() -> TransformerFn {
     Box::new(|s: &str| s.to_lowercase())
 }
 
-/// 3. Forces the input string to uppercase.
+/// Forces the input string to uppercase.
 pub fn force_uppercase() -> TransformerFn {
     Box::new(|s: &str| s.to_uppercase())
 }
@@ -132,7 +132,7 @@ pub fn validate_email() -> ValidatorFn {
     })
 }
 
-// --- 4. Pipeline Execution ---
+// --- Pipeline Execution ---
 
 /// Executes a sequence of validators against a string slice.
 pub fn run_validators(s: &str, validators: &[ValidatorFn]) -> Result<(), String> {

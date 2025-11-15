@@ -48,7 +48,7 @@ mod tests {
         // --- STEP 1: Register the User ---
 
         let register_request = RegisterRequest {
-            email: email.to_string(),
+            user: email.to_string(),
             password: password.to_string(),
         };
 
@@ -60,7 +60,7 @@ mod tests {
         // --- STEP 2: Log in with the Registered User ---
 
         let login_request = LoginRequest {
-            email: email.to_string(),
+            user: email.to_string(),
             password: password.to_string(),
         };
 
@@ -87,7 +87,7 @@ mod tests {
         server
             .post("/api/register")
             .json(&RegisterRequest {
-                email: "validusername".to_string(),
+                user: "validusername".to_string(),
                 password: "correct_password".to_string(),
             })
             .await
@@ -95,7 +95,7 @@ mod tests {
 
         // WHEN: Attempting to log in with the wrong password
         let login_request = LoginRequest {
-            email: "validusername".to_string(),
+            user: "validusername".to_string(),
             password: "wrong_password".to_string(),
         };
 

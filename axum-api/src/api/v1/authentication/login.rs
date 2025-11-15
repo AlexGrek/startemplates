@@ -24,7 +24,7 @@ pub async fn register(
     let hashed_password = app_state.auth.hash_password(&req.password)?;
 
     let user = User {
-        username: validate_username(&req.email).map_err(|estr| AppError::Validation(estr))?,
+        username: validate_username(&req.user).map_err(|estr| AppError::Validation(estr))?,
         password_hash: hashed_password,
     };
 
@@ -34,7 +34,7 @@ pub async fn register(
 
     log::info!(
         "Register event -> {}",
-        format!("User with ID {:?} created: {}", &uid, &req.email)
+        format!("User with ID {:?} created: {}", &uid, &req.user)
     );
 
     Ok(StatusCode::CREATED)
@@ -47,7 +47,7 @@ pub async fn login(
     let user = app_state
         .db
         .users()
-        .get_user(&req.email)
+        .get_user(&req.user)
         .await
         .map_err(|_e| AppError::Authorization("Unauthorized".to_string()))?;
 

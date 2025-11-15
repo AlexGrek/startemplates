@@ -8,20 +8,20 @@ pub struct User {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RegisterRequest {
-    pub email: String,
+    pub user: String,
     pub password: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LoginRequest {
-    pub email: String,
+    pub user: String,
     pub password: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ImpersonateRequest {
     pub action: String,
-    pub email: String,
+    pub user: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
