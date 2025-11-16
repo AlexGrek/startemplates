@@ -5,14 +5,36 @@ use std::sync::Arc;
 use anyhow::anyhow;
 
 use arangors::{
-    AqlQuery, Database, client::ClientExt, collection::{Collection, CollectionType, options::CreateOptions}, document::{Document, options::{InsertOptions, RemoveOptions, ReplaceOptions}}
+    AqlQuery, Connection, Database,
+    client::ClientExt,
+    collection::{Collection, CollectionType, options::CreateOptions},
+    document::{
+        Document,
+        options::{InsertOptions, RemoveOptions, ReplaceOptions},
+    },
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{db::{BoxFuture, DatabaseInterface, GroupsRepo, ProjectsRepo, TicketsRepo, UsersRepo}, models::User};
 use crate::error::AppError;
-use crate::models::{Group, Project, Ticket}; // Assuming User is in models, not schema
+use crate::models::{Group, Project, Ticket};
+use crate::{
+    db::{BoxFuture, DatabaseInterface, GroupsRepo, ProjectsRepo, TicketsRepo, UsersRepo},
+    models::User,
+}; // Assuming User is in models, not schema
+
+pub async fn connect_or_create_db_no_auth(
+    conn: &Connection,
+    db_name: &str,
+) -> Result<Database<arangors::client::reqwest::ReqwestClient>, arangors::ClientError> {
+    match conn.db(db_name).await {
+        Ok(db) => Ok(db),
+        Err(_) => {
+            conn.create_database(db_name).await?;
+            conn.db(db_name).await
+        }
+    }
+}
 
 // ===================================================================
 // Error Handling Helpers
@@ -50,9 +72,10 @@ impl From<ArangoError> for AppError {
                 // Handle other driver-level errors
                 AppError::Internal(anyhow!(ar_err.to_string()))
             }
-            ArangoError::CollectionMissing(name) => {
-                AppError::Internal(anyhow!("Configuration error: Collection '{}' does not exist.", name))
-            }
+            ArangoError::CollectionMissing(name) => AppError::Internal(anyhow!(
+                "Configuration error: Collection '{}' does not exist.",
+                name
+            )),
         }
     }
 }
@@ -159,26 +182,30 @@ impl<C: ClientExt + Send + Sync> ArangoDatabase<C> {
         Self::create_collection(db, "membership", CollectionType::Edge).await?;
         Self::create_collection(db, "parentOf", CollectionType::Edge).await?;
         Self::create_collection(db, "owns", CollectionType::Edge).await?;
-        
+
         Ok(())
     }
 
     /// Private helper to create a collection if it doesn't exist.
     // CORRECTED: Function is generic
-    async fn create_collection(db: &Database<C>, name: &str, col_type: CollectionType) -> Result<(), AppError> {
+    async fn create_collection(
+        db: &Database<C>,
+        name: &str,
+        col_type: CollectionType,
+    ) -> Result<(), AppError> {
         if db.collection(name).await.is_ok() {
             return Ok(()); // Collection already exists
         }
-        
+
         let options = CreateOptions::builder()
             .collection_type(col_type)
             .name(name)
             .build();
-            
+
         db.create_collection_with_options(options, Default::default())
             .await
             .map_err_app_error()?;
-            
+
         Ok(())
     }
 }
@@ -250,9 +277,9 @@ impl<C: ClientExt + Send + Sync> UsersRepo for ArangoUsersRepo<C> {
         Box::pin(async move {
             let collection = self.collection().await?;
             let doc: Document<ArangoUser> = collection.document(id).await.map_err_app_error()?;
-            
+
             if doc.document.doc_type != "user" {
-                 return Err(AppError::NotFound(format!("User {} not found", id)));
+                return Err(AppError::NotFound(format!("User {} not found", id)));
             }
 
             Ok(doc.document.user)
@@ -267,9 +294,12 @@ impl<C: ClientExt + Send + Sync> UsersRepo for ArangoUsersRepo<C> {
                 user,
                 doc_type: "user".to_string(),
             };
-            
+
             let options = InsertOptions::builder().overwrite(false).build();
-            collection.create_document(doc, options).await.map_err_app_error()?;
+            collection
+                .create_document(doc, options)
+                .await
+                .map_err_app_error()?;
             Ok(())
         })
     }
@@ -286,7 +316,10 @@ impl<C: ClientExt + Send + Sync> UsersRepo for ArangoUsersRepo<C> {
             };
 
             let options = ReplaceOptions::builder().ignore_revs(true).build();
-            collection.replace_document(id, doc, options, None).await.map_err_app_error()?;
+            collection
+                .replace_document(id, doc, options, None)
+                .await
+                .map_err_app_error()?;
             Ok(())
         })
     }
@@ -297,7 +330,10 @@ impl<C: ClientExt + Send + Sync> UsersRepo for ArangoUsersRepo<C> {
             self.get_user(id).await?; // Check type and existence
 
             let options = RemoveOptions::builder().silent(true).build();
-            collection.remove_document::<ArangoUser>(id, options, None).await.map_err_app_error()?;
+            collection
+                .remove_document::<ArangoUser>(id, options, None)
+                .await
+                .map_err_app_error()?;
             Ok(())
         })
     }
@@ -307,9 +343,9 @@ impl<C: ClientExt + Send + Sync> UsersRepo for ArangoUsersRepo<C> {
             let query = "FOR doc IN principals FILTER doc.doc_type == 'user' RETURN doc";
             // CORRECTED: Use AqlQuery::builder()
             let aql = AqlQuery::builder().query(query).build();
-            
+
             let arango_users: Vec<ArangoUser> = self.db.aql_query(aql).await.map_err_app_error()?;
-            
+
             let users = arango_users.into_iter().map(|au| au.user).collect();
             Ok(users)
         })
@@ -343,7 +379,7 @@ impl<C: ClientExt + Send + Sync> GroupsRepo for ArangoGroupsRepo<C> {
             let doc: Document<ArangoGroup> = collection.document(id).await.map_err_app_error()?;
 
             if doc.document.doc_type != "group" {
-                 return Err(AppError::NotFound(format!("Group {} not found", id)));
+                return Err(AppError::NotFound(format!("Group {} not found", id)));
             }
 
             Ok(doc.document.group)
@@ -358,14 +394,21 @@ impl<C: ClientExt + Send + Sync> GroupsRepo for ArangoGroupsRepo<C> {
                 group,
                 doc_type: "group".to_string(),
             };
-            
+
             let options = InsertOptions::builder().overwrite(false).build();
-            collection.create_document(doc, options).await.map_err_app_error()?;
+            collection
+                .create_document(doc, options)
+                .await
+                .map_err_app_error()?;
             Ok(())
         })
     }
 
-    fn update_group<'a>(&'a self, id: &'a str, group: Group) -> BoxFuture<'a, Result<(), AppError>> {
+    fn update_group<'a>(
+        &'a self,
+        id: &'a str,
+        group: Group,
+    ) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let collection = self.collection().await?;
             self.get_group(id).await?; // Check type and existence
@@ -376,7 +419,10 @@ impl<C: ClientExt + Send + Sync> GroupsRepo for ArangoGroupsRepo<C> {
                 doc_type: "group".to_string(),
             };
             let options = ReplaceOptions::builder().silent(true).build();
-            collection.replace_document(id, doc, options, None).await.map_err_app_error()?;
+            collection
+                .replace_document(id, doc, options, None)
+                .await
+                .map_err_app_error()?;
             Ok(())
         })
     }
@@ -387,7 +433,10 @@ impl<C: ClientExt + Send + Sync> GroupsRepo for ArangoGroupsRepo<C> {
             self.get_group(id).await?; // Check type and existence
 
             let options = RemoveOptions::builder().silent(true);
-            collection.remove_document::<ArangoGroup>(id, options.build(), None).await.map_err_app_error()?;
+            collection
+                .remove_document::<ArangoGroup>(id, options.build(), None)
+                .await
+                .map_err_app_error()?;
             Ok(())
         })
     }
@@ -397,9 +446,10 @@ impl<C: ClientExt + Send + Sync> GroupsRepo for ArangoGroupsRepo<C> {
             let query = "FOR doc IN principals FILTER doc.doc_type == 'group' RETURN doc";
             // CORRECTED: Use AqlQuery::builder()
             let aql = AqlQuery::builder().query(query).build();
-            
-            let arango_groups: Vec<ArangoGroup> = self.db.aql_query(aql).await.map_err_app_error()?;
-            
+
+            let arango_groups: Vec<ArangoGroup> =
+                self.db.aql_query(aql).await.map_err_app_error()?;
+
             let groups = arango_groups.into_iter().map(|ag| ag.group).collect();
             Ok(groups)
         })
@@ -442,23 +492,33 @@ impl<C: ClientExt + Send + Sync> ProjectsRepo for ArangoProjectsRepo<C> {
                 key: project.id.to_string(),
                 project,
             };
-            
+
             let options = InsertOptions::builder().overwrite(false).build();
-            collection.create_document(doc, options).await.map_err_app_error()?;
+            collection
+                .create_document(doc, options)
+                .await
+                .map_err_app_error()?;
             Ok(())
         })
     }
 
-    fn update_project<'a>(&'a self, id: &'a str, project: Project) -> BoxFuture<'a, Result<(), AppError>> {
+    fn update_project<'a>(
+        &'a self,
+        id: &'a str,
+        project: Project,
+    ) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let collection = self.collection().await?;
             let doc = ArangoProject {
                 key: id.to_string(),
                 project,
             };
-            
+
             let options = ReplaceOptions::builder().silent(true).build();
-            collection.replace_document(id, doc, options, None).await.map_err_app_error()?;
+            collection
+                .replace_document(id, doc, options, None)
+                .await
+                .map_err_app_error()?;
             Ok(())
         })
     }
@@ -466,9 +526,12 @@ impl<C: ClientExt + Send + Sync> ProjectsRepo for ArangoProjectsRepo<C> {
     fn delete_project<'a>(&'a self, id: &'a str) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let collection = self.collection().await?;
-            
+
             let options = RemoveOptions::builder().silent(true);
-            collection.remove_document::<ArangoProject>(id, options.build(), None).await.map_err_app_error()?;
+            collection
+                .remove_document::<ArangoProject>(id, options.build(), None)
+                .await
+                .map_err_app_error()?;
             Ok(())
         })
     }
@@ -478,9 +541,10 @@ impl<C: ClientExt + Send + Sync> ProjectsRepo for ArangoProjectsRepo<C> {
             let query = "FOR doc IN projects RETURN doc";
             // CORRECTED: Use AqlQuery::builder()
             let aql = AqlQuery::builder().query(query).build();
-            
-            let arango_projects: Vec<ArangoProject> = self.db.aql_query(aql).await.map_err_app_error()?;
-            
+
+            let arango_projects: Vec<ArangoProject> =
+                self.db.aql_query(aql).await.map_err_app_error()?;
+
             let projects = arango_projects.into_iter().map(|ap| ap.project).collect();
             Ok(projects)
         })
@@ -523,23 +587,33 @@ impl<C: ClientExt + Send + Sync> TicketsRepo for ArangoTicketsRepo<C> {
                 key: ticket.id.to_string(),
                 ticket,
             };
-            
+
             let options = InsertOptions::builder().overwrite(false);
-            collection.create_document(doc, options.build()).await.map_err_app_error()?;
+            collection
+                .create_document(doc, options.build())
+                .await
+                .map_err_app_error()?;
             Ok(())
         })
     }
 
-    fn update_ticket<'a>(&'a self, id: &'a str, ticket: Ticket) -> BoxFuture<'a, Result<(), AppError>> {
+    fn update_ticket<'a>(
+        &'a self,
+        id: &'a str,
+        ticket: Ticket,
+    ) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let collection = self.collection().await?;
             let doc = ArangoTicket {
                 key: id.to_string(),
                 ticket,
             };
-            
+
             let options = ReplaceOptions::builder().silent(true);
-            collection.replace_document(id, doc, options.build(), None).await.map_err_app_error()?;
+            collection
+                .replace_document(id, doc, options.build(), None)
+                .await
+                .map_err_app_error()?;
             Ok(())
         })
     }
@@ -547,9 +621,12 @@ impl<C: ClientExt + Send + Sync> TicketsRepo for ArangoTicketsRepo<C> {
     fn delete_ticket<'a>(&'a self, id: &'a str) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let collection = self.collection().await?;
-            
+
             let options = RemoveOptions::builder().silent(true).build();
-            collection.remove_document::<ArangoTicket>(id, options, None).await.map_err_app_error()?;
+            collection
+                .remove_document::<ArangoTicket>(id, options, None)
+                .await
+                .map_err_app_error()?;
             Ok(())
         })
     }
@@ -559,9 +636,10 @@ impl<C: ClientExt + Send + Sync> TicketsRepo for ArangoTicketsRepo<C> {
             let query = "FOR doc IN tickets RETURN doc";
             // CORRECTED: Use AqlQuery::builder()
             let aql = AqlQuery::builder().query(query).build();
-            
-            let arango_tickets: Vec<ArangoTicket> = self.db.aql_query(aql).await.map_err_app_error()?;
-            
+
+            let arango_tickets: Vec<ArangoTicket> =
+                self.db.aql_query(aql).await.map_err_app_error()?;
+
             let tickets = arango_tickets.into_iter().map(|at| at.ticket).collect();
             Ok(tickets)
         })

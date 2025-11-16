@@ -14,6 +14,7 @@ pub struct RuntimeConfig {
 pub struct AppConfig {
     pub jwt_secret: String,
     pub database_connection_string: String,
+    pub database_name: String,
     pub client_api_keys: Vec<String>,
     pub management_token: String,
     pub host: String,
@@ -46,6 +47,9 @@ impl AppConfig {
 
         let database_connection_string =
             env::var("DB_CONNECTION_STRING").unwrap_or_else(|_| "./data".to_string());
+        
+        let database_name =
+            env::var("DB_NAME").unwrap_or_else(|_| "unnamed".to_string());
 
         let client_api_keys = env::var("CLIENT_API_KEYS")
             .unwrap_or_else(|_| String::new())
@@ -67,6 +71,7 @@ impl AppConfig {
             host,
             port,
             management_token,
+            database_name
         })
     }
 }
