@@ -29,4 +29,5 @@ itests:
 	@. .venv/bin/activate && \
 		pip install --upgrade pip && \
 		pip install requests pytest && \
+		pip install websockets && \
 		pytest itests/tests

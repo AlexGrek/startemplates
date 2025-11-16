@@ -3,10 +3,13 @@ import requests
 import json
 import re
 import random
+import websockets
+import asyncio
 
 
 URL_LOGIN = "http://localhost:3742/api/login"
 URL_REGISTER = "http://localhost:3742/api/register"
+URL_WS = "ws://localhost:3742/api/v1/ws"
 
 
 def is_jwt(s: str) -> bool:
@@ -44,7 +47,29 @@ class MainErr:
 def test_user():
     """Create a random test user credentials"""
     num = random.randint(100000, 999999)
-    return {"username": f"itest{num}", "password": f"itest{num}"}
+    return {
+        "username": f"itest{num}",
+        "password": f"itest{num}"
+    }
+
+
+@pytest.fixture(scope="module")
+def auth_token(test_user):
+    """Login and get JWT token for the test user"""
+    headers = {
+        "Accept": "*/*",
+        "User-Agent": "pytest-client",
+        "Content-Type": "application/json",
+    }
+    payload = {"user": test_user["username"], "password": test_user["password"]}
+
+    resp = requests.post(URL_LOGIN, json=payload, headers=headers)
+    assert resp.status_code == 200, f"Login failed: {resp.text}"
+
+    data = resp.json()
+    assert "token" in data, "No token in response"
+    
+    return data["token"]
 
 
 def test_1_register_user(test_user):
@@ -106,3 +131,23 @@ def test_3_login_failure():
     assert main_err.error.message == "Authorization failed: Unauthorized"
     assert main_err.error.status == 401
     assert main_err.error.type == "authorization_error"
+
+
+def test_4_websocket_connection(auth_token):
+    """Test 4: Establish WebSocket connection with JWT token"""
+    
+    async def test_ws():
+        headers = [
+            ("Authorization", f"Bearer {auth_token}")
+        ]
+        
+        async with websockets.connect(URL_WS, additional_headers=headers) as ws:
+            # Connection is established if we reach here without exception
+            # Optional: Send a test message and receive response
+            # await ws.send(json.dumps({"type": "ping"}))
+            # response = await ws.recv()
+            # assert response is not None
+            pass
+    
+    # Run the async test
+    asyncio.run(test_ws())

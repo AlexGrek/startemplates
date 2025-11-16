@@ -7,6 +7,7 @@ use axum::{
     },
     response::IntoResponse,
 };
+use log::info;
 
 use crate::{middleware::auth::AuthenticatedUser, state::AppState};
 
@@ -23,13 +24,18 @@ async fn handle_socket(mut socket: WebSocket, user_id: String, _app_state: Arc<A
     // - authenticated user email
     // - entire application state
 
+    info!("Websocket connected: {}", user_id);
+
     while let Some(Ok(msg)) = socket.recv().await {
         match msg {
             Message::Text(t) => {
                 let reply = format!("{} said: {}", user_id, t);
                 let _ = socket.send(Message::Text(reply.into())).await;
             }
-            Message::Close(_) => break,
+            Message::Close(_) => {
+                info!("Websocket disconnected: {}", user_id);
+                break;
+            }
             _ => {}
         }
     }
