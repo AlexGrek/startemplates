@@ -1,6 +1,7 @@
 pub mod inmemory;
+pub mod arangodb;
 
-use crate::{error::AppError, models::{Group, Project, Ticket}, schema::User, utils::BoxFuture};
+use crate::{error::AppError, models::{Group, Project, Ticket, User}, utils::BoxFuture};
 
 // Individual repository traits
 pub trait UsersRepo: Send + Sync {
@@ -47,4 +48,7 @@ pub trait DatabaseInterface: Send + Sync {
     fn begin_transaction<'a>(&'a self) -> BoxFuture<'a, Result<(), AppError>>;
     fn commit_transaction<'a>(&'a self) -> BoxFuture<'a, Result<(), AppError>>;
     fn rollback_transaction<'a>(&'a self) -> BoxFuture<'a, Result<(), AppError>>;
+
+    // Initialization (called on app start, can do migrations, db creation)
+    fn initialize(&self) -> BoxFuture<'_, Result<(), AppError>>;
 }

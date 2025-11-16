@@ -6,7 +6,7 @@ use crate::db::{BoxFuture, DatabaseInterface, GroupsRepo, ProjectsRepo, TicketsR
 use crate::error::AppError;
 use crate::models::Ticket;
 
-use crate::{models::{Group, Project}, schema::User};
+use crate::{models::{Group, Project, User}};
 
 pub struct InMemoryDatabase {
     users_repo: InMemoryUsersRepo,
@@ -66,6 +66,13 @@ impl DatabaseInterface for InMemoryDatabase {
     fn rollback_transaction<'a>(&'a self) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             // No-op for in-memory implementation
+            Ok(())
+        })
+    }
+    
+    fn initialize(&self) -> BoxFuture<'_, Result<(), AppError>> {
+        // do nothing, succesfully
+        Box::pin(async move {
             Ok(())
         })
     }

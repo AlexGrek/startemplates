@@ -30,7 +30,7 @@ pub async fn register(
 
     let uid = user.username.clone();
 
-    app_state.db.users().create_user(user).await?;
+    app_state.db.users().create_user(user.into()).await?;
 
     log::info!(
         "Register event -> {}",

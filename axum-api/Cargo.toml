@@ -22,3 +22,4 @@ uuid = { version = "1.17.0", features = ["v7", "serde"] }
 log = "0.4.28"
 chrono = { version = "0.4.42", features = ["serde"] }
 axum-test = { version = "18.2.1", features = ["old-json-diff"] }
+arangors = "0.6.0"
