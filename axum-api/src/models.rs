@@ -101,5 +101,5 @@ pub struct Ticket {
 pub struct Group {
     pub gid: String,
     pub name: String,
-    principals: Vec<String>
+    pub principals: Vec<String>
 }
