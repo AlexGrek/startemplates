@@ -1,5 +1,3 @@
-// In your arangodb/mod.rs file
-
 use std::sync::Arc;
 
 use anyhow::anyhow;
@@ -55,7 +53,6 @@ impl From<ArangoError> for AppError {
         match err {
             ArangoError::Arango(ar_err) => {
                 // Handle common ArangoDB API errors
-                // CORRECTED: Check for the ClientError::Arango variant
                 if let arangors::ClientError::Arango(api_err) = ar_err {
                     let code = api_err.code().into();
                     let msg = api_err.message().to_string();

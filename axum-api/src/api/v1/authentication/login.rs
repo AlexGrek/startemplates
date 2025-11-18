@@ -1,6 +1,6 @@
 use crate::{
     error::AppError,
-    schema::{LoginRequest, LoginResponse, RegisterRequest, User},
+    schema::{Created, LoginRequest, LoginResponse, RegisterRequest, User},
     state::AppState,
     validation::naming::validate_username,
 };
@@ -11,10 +11,15 @@ use axum::{
 };
 use std::sync::Arc;
 
+#[utoipa::path(
+    get,
+    path = "/api/register",
+    responses((status = 201, description = "Create user successfully"))
+)]
 pub async fn register(
     State(app_state): State<Arc<AppState>>,
     Json(req): Json<RegisterRequest>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Created, AppError>{
     if !app_state.runtime_config.user_login_allowed {
         return Err(AppError::Authentication(
             "Only admin can create new users".to_string(),
@@ -37,7 +42,7 @@ pub async fn register(
         format!("User with ID {:?} created: {}", &uid, &req.user)
     );
 
-    Ok(StatusCode::CREATED)
+    Ok(Created{})
 }
 
 pub async fn login(

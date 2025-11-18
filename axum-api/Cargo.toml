@@ -23,3 +23,8 @@ log = "0.4.28"
 chrono = { version = "0.4.42", features = ["serde"] }
 axum-test = { version = "18.2.1", features = ["old-json-diff"] }
 arangors = "0.6.0"
+utoipa = { version = "5.4.0", features = ["auto_into_responses", "axum_extras", "openapi_extensions", "repr", "url", "uuid", "yaml"] }
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
+utoipa-axum = "0.2.0"
+utoipa_auto_discovery = "0.3.0"
+utoipauto = "0.2.0"

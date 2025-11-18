@@ -1,10 +1,17 @@
+use std::collections::BTreeMap;
+
 use axum::{
     Json,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use serde::Serialize;
 use serde_json::json;
 use thiserror::Error;
+use utoipa::{
+    IntoResponses, PartialSchema, ToSchema,
+    openapi::{self, ContentBuilder, RefOr, ResponseBuilder},
+};
 
 #[derive(Error, Debug)]
 pub enum AppError {
@@ -104,6 +111,117 @@ impl AppError {
             | AppError::BcryptError(_) => true,
             AppError::SchedulingImpossible(_) => true,
         }
+    }
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct ErrorResponse {
+    pub r#type: String, // Use r# to allow "type" keyword
+    pub message: String,
+    pub status: u16,
+}
+
+impl IntoResponses for AppError {
+    fn responses() -> BTreeMap<String, RefOr<openapi::Response>> {
+        let mut responses = BTreeMap::new();
+
+        // 400 Bad Request
+        responses.insert(
+            "400".to_string(),
+            RefOr::T(
+                ResponseBuilder::new()
+                    .description("Bad Request")
+                    .content(
+                        "application/json",
+                        ContentBuilder::new()
+                            .schema(Some(ErrorResponse::schema()))
+                            .build(),
+                    )
+                    .build(),
+            ),
+        );
+
+        // 401 Unauthorized
+        responses.insert(
+            "401".to_string(),
+            RefOr::T(
+                ResponseBuilder::new()
+                    .description("Unauthorized")
+                    .content(
+                        "application/json",
+                        ContentBuilder::new()
+                            .schema(Some(ErrorResponse::schema()))
+                            .build(),
+                    )
+                    .build(),
+            ),
+        );
+
+        // 404 Not Found
+        responses.insert(
+            "404".to_string(),
+            RefOr::T(
+                ResponseBuilder::new()
+                    .description("Not Found")
+                    .content(
+                        "application/json",
+                        ContentBuilder::new()
+                            .schema(Some(ErrorResponse::schema()))
+                            .build(),
+                    )
+                    .build(),
+            ),
+        );
+
+        // 409 Conflict
+        responses.insert(
+            "409".to_string(),
+            RefOr::T(
+                ResponseBuilder::new()
+                    .description("Conflict")
+                    .content(
+                        "application/json",
+                        ContentBuilder::new()
+                            .schema(Some(ErrorResponse::schema()))
+                            .build(),
+                    )
+                    .build(),
+            ),
+        );
+
+        // 500 Internal Server Error
+        responses.insert(
+            "500".to_string(),
+            RefOr::T(
+                ResponseBuilder::new()
+                    .description("Internal Server Error")
+                    .content(
+                        "application/json",
+                        ContentBuilder::new()
+                            .schema(Some(ErrorResponse::schema()))
+                            .build(),
+                    )
+                    .build(),
+            ),
+        );
+
+        // 503 Service Unavailable
+        responses.insert(
+            "503".to_string(),
+            RefOr::T(
+                ResponseBuilder::new()
+                    .description("Service Unavailable")
+                    .content(
+                        "application/json",
+                        ContentBuilder::new()
+                            .schema(Some(ErrorResponse::schema()))
+                            .build(),
+                    )
+                    .build(),
+            ),
+        );
+
+        responses
     }
 }
 

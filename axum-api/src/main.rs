@@ -31,18 +31,29 @@ use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
+use utoipa::OpenApi;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_swagger_ui::SwaggerUi;
 
-pub fn create_app(shared_state: Arc<AppState>) -> Router {
-    Router::new()
+
+
+// Uncomment on build if you want swagger UI, currently enabling this makes IDE fail.
+// use utoipauto::utoipauto;
+// #[utoipauto]
+#[derive(OpenApi)]
+#[openapi()]
+struct ApiDoc;
+
+pub fn create_app(shared_state: Arc<AppState>) -> IntoMakeService<Router> {
+    let mainrt = Router::new()
         // Health check and stats
-        .route("/health", get(health_check))
         .route(
-            "/api/register",
+            "/register",
             post(api::v1::authentication::login::register),
         )
-        .route("/api/login", post(api::v1::authentication::login::login))
+        .route("/login", post(api::v1::authentication::login::login))
         .nest(
-            "/api/v1",
+            "/v1",
             Router::new()
                 .route("/ws", get(ws_handler))
                 .layer(from_fn_with_state(
@@ -57,7 +68,17 @@ pub fn create_app(shared_state: Arc<AppState>) -> Router {
                 .allow_origin(Any)
                 .allow_methods(Any)
                 .allow_headers(Any),
-        )
+        );
+    let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
+        .nest("/api", mainrt.into())
+        .route("/health", get(health_check))
+        .split_for_parts();
+    let router = router.merge(
+        SwaggerUi::new("/swagger-ui")
+            .url("/api-docs/openapi.json", api),
+    );
+
+    router.into_make_service()
 }
 
 pub fn create_mock_shared_state() -> Result<AppState, Box<dyn std::error::Error>> {
