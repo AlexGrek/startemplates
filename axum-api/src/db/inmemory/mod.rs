@@ -6,7 +6,7 @@ use crate::db::{BoxFuture, DatabaseInterface, GroupsRepo, ProjectsRepo, TicketsR
 use crate::error::AppError;
 use crate::models::Ticket;
 
-use crate::{models::{Group, Project, User}};
+use crate::models::{Group, Project, User};
 
 pub struct InMemoryDatabase {
     users_repo: InMemoryUsersRepo,
@@ -36,45 +36,43 @@ impl DatabaseInterface for InMemoryDatabase {
     fn users(&self) -> &dyn UsersRepo {
         &self.users_repo
     }
-    
+
     fn projects(&self) -> &dyn ProjectsRepo {
         &self.projects_repo
     }
-    
+
     fn groups(&self) -> &dyn GroupsRepo {
         &self.groups_repo
     }
-    
+
     fn tickets(&self) -> &dyn TicketsRepo {
         &self.tickets_repo
     }
-    
+
     fn begin_transaction<'a>(&'a self) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             // No-op for in-memory implementation
             Ok(())
         })
     }
-    
+
     fn commit_transaction<'a>(&'a self) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             // No-op for in-memory implementation
             Ok(())
         })
     }
-    
+
     fn rollback_transaction<'a>(&'a self) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             // No-op for in-memory implementation
             Ok(())
         })
     }
-    
+
     fn initialize(&self) -> BoxFuture<'_, Result<(), AppError>> {
         // do nothing, succesfully
-        Box::pin(async move {
-            Ok(())
-        })
+        Box::pin(async move { Ok(()) })
     }
 }
 
@@ -101,12 +99,13 @@ impl UsersRepo for InMemoryUsersRepo {
     fn get_user<'a>(&'a self, id: &'a str) -> BoxFuture<'a, Result<User, AppError>> {
         Box::pin(async move {
             let users = self.users.read().unwrap();
-            users.get(id)
+            users
+                .get(id)
                 .cloned()
                 .ok_or_else(|| AppError::NotFound(format!("User {} not found", id)))
         })
     }
-    
+
     fn create_user<'a>(&'a self, user: User) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut users = self.users.write().unwrap();
@@ -118,7 +117,7 @@ impl UsersRepo for InMemoryUsersRepo {
             Ok(())
         })
     }
-    
+
     fn update_user<'a>(&'a self, id: &'a str, user: User) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut users = self.users.write().unwrap();
@@ -129,16 +128,17 @@ impl UsersRepo for InMemoryUsersRepo {
             Ok(())
         })
     }
-    
+
     fn delete_user<'a>(&'a self, id: &'a str) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut users = self.users.write().unwrap();
-            users.remove(id)
+            users
+                .remove(id)
                 .ok_or_else(|| AppError::NotFound(format!("User {} not found", id)))?;
             Ok(())
         })
     }
-    
+
     fn list_users<'a>(&'a self) -> BoxFuture<'a, Result<Vec<User>, AppError>> {
         Box::pin(async move {
             let users = self.users.read().unwrap();
@@ -170,12 +170,13 @@ impl ProjectsRepo for InMemoryProjectsRepo {
     fn get_project<'a>(&'a self, id: &'a str) -> BoxFuture<'a, Result<Project, AppError>> {
         Box::pin(async move {
             let projects = self.projects.read().unwrap();
-            projects.get(id)
+            projects
+                .get(id)
                 .cloned()
                 .ok_or_else(|| AppError::NotFound(format!("Project {} not found", id)))
         })
     }
-    
+
     fn create_project<'a>(&'a self, project: Project) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut projects = self.projects.write().unwrap();
@@ -187,8 +188,12 @@ impl ProjectsRepo for InMemoryProjectsRepo {
             Ok(())
         })
     }
-    
-    fn update_project<'a>(&'a self, id: &'a str, project: Project) -> BoxFuture<'a, Result<(), AppError>> {
+
+    fn update_project<'a>(
+        &'a self,
+        id: &'a str,
+        project: Project,
+    ) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut projects = self.projects.write().unwrap();
             if !projects.contains_key(id) {
@@ -198,16 +203,17 @@ impl ProjectsRepo for InMemoryProjectsRepo {
             Ok(())
         })
     }
-    
+
     fn delete_project<'a>(&'a self, id: &'a str) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut projects = self.projects.write().unwrap();
-            projects.remove(id)
+            projects
+                .remove(id)
                 .ok_or_else(|| AppError::NotFound(format!("Project {} not found", id)))?;
             Ok(())
         })
     }
-    
+
     fn list_projects<'a>(&'a self) -> BoxFuture<'a, Result<Vec<Project>, AppError>> {
         Box::pin(async move {
             let projects = self.projects.read().unwrap();
@@ -239,25 +245,30 @@ impl GroupsRepo for InMemoryGroupsRepo {
     fn get_group<'a>(&'a self, id: &'a str) -> BoxFuture<'a, Result<Group, AppError>> {
         Box::pin(async move {
             let groups = self.groups.read().unwrap();
-            groups.get(id)
+            groups
+                .get(id)
                 .cloned()
                 .ok_or_else(|| AppError::NotFound(format!("Group {} not found", id)))
         })
     }
-    
+
     fn create_group<'a>(&'a self, group: Group) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut groups = self.groups.write().unwrap();
-            let id = group.id;
-            if groups.contains_key(&id.to_string()) {
+            let id = group.gid.to_string();
+            if groups.contains_key(&id) {
                 return Err(AppError::Conflict(format!("Group {} already exists", id)));
             }
             groups.insert(id.to_string(), group);
             Ok(())
         })
     }
-    
-    fn update_group<'a>(&'a self, id: &'a str, group: Group) -> BoxFuture<'a, Result<(), AppError>> {
+
+    fn update_group<'a>(
+        &'a self,
+        id: &'a str,
+        group: Group,
+    ) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut groups = self.groups.write().unwrap();
             if !groups.contains_key(id) {
@@ -267,16 +278,17 @@ impl GroupsRepo for InMemoryGroupsRepo {
             Ok(())
         })
     }
-    
+
     fn delete_group<'a>(&'a self, id: &'a str) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut groups = self.groups.write().unwrap();
-            groups.remove(id)
+            groups
+                .remove(id)
                 .ok_or_else(|| AppError::NotFound(format!("Group {} not found", id)))?;
             Ok(())
         })
     }
-    
+
     fn list_groups<'a>(&'a self) -> BoxFuture<'a, Result<Vec<Group>, AppError>> {
         Box::pin(async move {
             let groups = self.groups.read().unwrap();
@@ -308,12 +320,13 @@ impl TicketsRepo for InMemoryTicketsRepo {
     fn get_ticket<'a>(&'a self, id: &'a str) -> BoxFuture<'a, Result<Ticket, AppError>> {
         Box::pin(async move {
             let tickets = self.tickets.read().unwrap();
-            tickets.get(id)
+            tickets
+                .get(id)
                 .cloned()
                 .ok_or_else(|| AppError::NotFound(format!("Ticket {} not found", id)))
         })
     }
-    
+
     fn create_ticket<'a>(&'a self, ticket: Ticket) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut tickets = self.tickets.write().unwrap();
@@ -325,8 +338,12 @@ impl TicketsRepo for InMemoryTicketsRepo {
             Ok(())
         })
     }
-    
-    fn update_ticket<'a>(&'a self, id: &'a str, ticket: Ticket) -> BoxFuture<'a, Result<(), AppError>> {
+
+    fn update_ticket<'a>(
+        &'a self,
+        id: &'a str,
+        ticket: Ticket,
+    ) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut tickets = self.tickets.write().unwrap();
             if !tickets.contains_key(id) {
@@ -336,16 +353,17 @@ impl TicketsRepo for InMemoryTicketsRepo {
             Ok(())
         })
     }
-    
+
     fn delete_ticket<'a>(&'a self, id: &'a str) -> BoxFuture<'a, Result<(), AppError>> {
         Box::pin(async move {
             let mut tickets = self.tickets.write().unwrap();
-            tickets.remove(id)
+            tickets
+                .remove(id)
                 .ok_or_else(|| AppError::NotFound(format!("Ticket {} not found", id)))?;
             Ok(())
         })
     }
-    
+
     fn list_tickets<'a>(&'a self) -> BoxFuture<'a, Result<Vec<Ticket>, AppError>> {
         Box::pin(async move {
             let tickets = self.tickets.read().unwrap();

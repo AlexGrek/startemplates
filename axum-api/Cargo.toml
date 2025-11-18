@@ -28,3 +28,4 @@ utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
 utoipa-axum = "0.2.0"
 utoipa_auto_discovery = "0.3.0"
 utoipauto = "0.2.0"
+bitflags = { version = "2.10.0", features = ["serde", "std"] }

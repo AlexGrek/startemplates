@@ -184,7 +184,6 @@ impl<C: ClientExt + Send + Sync> ArangoDatabase<C> {
     }
 
     /// Private helper to create a collection if it doesn't exist.
-    // CORRECTED: Function is generic
     async fn create_collection(
         db: &Database<C>,
         name: &str,
@@ -387,7 +386,7 @@ impl<C: ClientExt + Send + Sync> GroupsRepo for ArangoGroupsRepo<C> {
         Box::pin(async move {
             let collection = self.collection().await?;
             let doc = ArangoGroup {
-                key: group.id.to_string(), // Assuming Group has an `id` field
+                key: group.gid.to_string(), // Assuming Group has an `id` field
                 group,
                 doc_type: "group".to_string(),
             };

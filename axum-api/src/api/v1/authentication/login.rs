@@ -6,7 +6,6 @@ use crate::{
 };
 use axum::{
     extract::{Json, State},
-    http::StatusCode,
     response::IntoResponse,
 };
 use std::sync::Arc;
